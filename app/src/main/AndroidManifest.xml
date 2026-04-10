@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SpanishNew">
         <activity
-            android:name=".SecondActivity"
+            android:name=".ShowLessonActivity"
             android:exported="false"
             android:theme="@style/Theme.SpanishNew" />
         <activity

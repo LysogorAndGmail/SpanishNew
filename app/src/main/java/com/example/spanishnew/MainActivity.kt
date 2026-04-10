@@ -1,11 +1,15 @@
 package com.example.spanishnew
 
+import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
-import android.widget.Button
+import android.view.ViewGroup
 import android.widget.GridLayout
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.example.spanishnew.databinding.ActivityMainBinding
+import com.google.android.material.button.MaterialButton
 
 class MainActivity : AppCompatActivity() {
 
@@ -19,18 +23,33 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
 
+        // Цвет для кнопок
+        val buttonColor = ContextCompat.getColor(this, R.color.button_blue)
+
         // Цикл для создания 9 кнопок
         for (i in 1..9) {
-            val button = Button(this).apply {
-                text = "Кнопка $i"
+            val button = MaterialButton(this).apply {
+                text = "Lección $i"
+                setTextColor(ContextCompat.getColor(context, R.color.white))
+                
+                // Настройка внешнего вида (скругление и цвет)
+                cornerRadius = (8 * resources.displayMetrics.density).toInt() // ~8dp скругление
+                backgroundTintList = ColorStateList.valueOf(buttonColor)
+                
+                // Тень (elevation)
+                elevation = 6 * resources.displayMetrics.density // ~6dp тень
+                
                 layoutParams = GridLayout.LayoutParams().apply {
                     width = 0
-                    height = GridLayout.LayoutParams.WRAP_CONTENT
+                    height = ViewGroup.LayoutParams.WRAP_CONTENT
                     columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                    setMargins(8, 8, 8, 8)
+                    setMargins(16, 16, 16, 16)
                 }
+
                 setOnClickListener {
-                    Snackbar.make(this, "Нажата кнопка $i", Snackbar.LENGTH_SHORT).show()
+                    val intent = Intent(this@MainActivity, ShowLessonActivity::class.java)
+                    intent.putExtra("LESSON_NUMBER", i)
+                    startActivity(intent)
                 }
             }
             binding.contentMain.buttonGrid.addView(button)
