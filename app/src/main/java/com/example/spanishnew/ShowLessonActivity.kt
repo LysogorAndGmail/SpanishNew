@@ -122,7 +122,15 @@ class ShowLessonActivity : AppCompatActivity() {
             showNextQuestion()
         } else {
             button.setBackgroundColor(Color.RED)
-            Toast.makeText(this, "Wrong! Try again", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Wrong! Progress reset.", Toast.LENGTH_SHORT).show()
+            
+            // Сбрасываем прогресс и перемешиваем список заново
+            currentIndex = 0
+            wordsList = wordsList.shuffled()
+            
+            // Небольшая задержка, чтобы пользователь увидел красный цвет (опционально)
+            // Но для простоты вызовем сразу, так как цвета кнопок сбросятся в showNextQuestion
+            showNextQuestion()
         }
     }
 }
