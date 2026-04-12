@@ -5,11 +5,14 @@ import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.ViewGroup
 import android.widget.GridLayout
-import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.example.spanishnew.databinding.ActivityMainBinding
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,7 +32,7 @@ class MainActivity : AppCompatActivity() {
         // Цикл для создания 9 кнопок
         for (i in 1..9) {
             val button = MaterialButton(this).apply {
-                text = "Lección $i"
+                text = "Lesson $i"
                 setTextColor(ContextCompat.getColor(context, R.color.white))
                 
                 // Настройка внешнего вида (скругление и цвет)
@@ -56,7 +59,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+            lifecycleScope.launch(Dispatchers.IO) {
+                val db = AppDatabase.getDatabase(applicationContext)
+                db.clearAllTables()
+                db.wordDao().insertWords(TestData.words)
+            }
+            Snackbar.make(view, "Database refreshed from TestData", Snackbar.LENGTH_LONG)
                 .setAction("Action", null)
                 .setAnchorView(R.id.fab).show()
         }

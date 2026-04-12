@@ -1,6 +1,7 @@
 package com.example.spanishnew
 
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,6 +15,9 @@ class ShowLessonActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySecondBinding
     private lateinit var adapter: WordsAdapter
 
+    // Переменная для хранения списка слов в памяти (если понадобится потом)
+    private var wordsList: List<Word> = emptyList()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -21,21 +25,18 @@ class ShowLessonActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setSupportActionBar(binding.toolbar)
-        
-        // Включаем кнопку "Назад" в тулбаре
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener {
             onBackPressedDispatcher.onBackPressed()
         }
 
-        // Получаем номер урока из Intent
         val lessonNumber = intent.getIntExtra("LESSON_NUMBER", 0)
-        
-        // Устанавливаем заголовок
-        binding.contentLesson.lessonTitle.text = "Lección $lessonNumber"
+        binding.contentLesson.lessonTitle.text = "Lesson $lessonNumber"
 
         setupRecyclerView()
-        loadWords(lessonNumber)
+
+        // Запускаем загрузку и перемешивание
+        loadAndShowRandomWords(lessonNumber)
     }
 
     private fun setupRecyclerView() {
@@ -44,13 +45,24 @@ class ShowLessonActivity : AppCompatActivity() {
         binding.contentLesson.wordsRecyclerView.adapter = adapter
     }
 
-    private fun loadWords(lessonNumber: Int) {
+    private fun loadAndShowRandomWords(lessonNumber: Int) {
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(applicationContext)
-            val words = db.wordDao().getWordsForLesson(lessonNumber)
-            
+            // 1. Получаем все слова из БД
+            val allWords = db.wordDao().getWordsForLesson(lessonNumber)
+
+            // 2. Перемешиваем их случайным образом
+            // Метод .shuffled() возвращает новый список в случайном порядке
+            val shuffledWords = allWords.shuffled()
+
+            // Сохраняем в переменную класса (если захотите использовать позже)
+            wordsList = shuffledWords
+
+            Log.d("SpanishApp", "Loaded ${allWords.size} words, showing in random order new new")
+
+            // 3. Выводим в интерфейс
             withContext(Dispatchers.Main) {
-                adapter.updateWords(words)
+                adapter.updateWords(shuffledWords)
             }
         }
     }
