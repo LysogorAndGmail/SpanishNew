@@ -52,6 +52,7 @@ class ShowLessonActivity : AppCompatActivity() {
             currentIndex = 0
 
             withContext(Dispatchers.Main) {
+                binding.contentLesson.lessonProgressBar.max = wordsList.size
                 showNextQuestion()
             }
         }
@@ -59,10 +60,16 @@ class ShowLessonActivity : AppCompatActivity() {
 
     private fun showNextQuestion() {
         if (currentIndex >= wordsList.size) {
+            val lessonNumber = intent.getIntExtra("LESSON_NUMBER", 0)
+            saveProgress(lessonNumber)
             Toast.makeText(this, "Lesson completed!", Toast.LENGTH_LONG).show()
             finish()
             return
         }
+
+        // Update progress
+        binding.contentLesson.lessonProgressBar.progress = currentIndex + 1
+        binding.contentLesson.progressText.text = "${currentIndex + 1} / ${wordsList.size}"
 
         val correctWord = wordsList[currentIndex]
         binding.contentLesson.targetWord.text = correctWord.original
@@ -97,6 +104,14 @@ class ShowLessonActivity : AppCompatActivity() {
             } else {
                 button.visibility = android.view.View.GONE
             }
+        }
+    }
+
+    private fun saveProgress(completedLesson: Int) {
+        val sharedPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val currentMax = sharedPrefs.getInt("MAX_UNLOCKED_LESSON", 1)
+        if (completedLesson >= currentMax) {
+            sharedPrefs.edit().putInt("MAX_UNLOCKED_LESSON", completedLesson + 1).apply()
         }
     }
 

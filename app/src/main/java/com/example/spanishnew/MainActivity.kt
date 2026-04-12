@@ -26,21 +26,50 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
 
-        // Цвет для кнопок
-        val buttonColor = ContextCompat.getColor(this, R.color.button_blue)
+        binding.fab.setOnClickListener { view ->
+            lifecycleScope.launch(Dispatchers.IO) {
+                val db = AppDatabase.getDatabase(applicationContext)
+                db.clearAllTables()
+                db.wordDao().insertWords(TestData.words)
+            }
+            // Сброс прогресса при обновлении БД (опционально, для тестов удобно)
+            getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putInt("MAX_UNLOCKED_LESSON", 1).apply()
+            
+            Snackbar.make(view, "Database refreshed and progress reset", Snackbar.LENGTH_LONG)
+                .setAction("Action", null)
+                .setAnchorView(R.id.fab).show()
+            
+            // Перерисовываем кнопки
+            setupLessonButtons()
+        }
+    }
 
-        // Цикл для создания 9 кнопок
+    override fun onResume() {
+        super.onResume()
+        setupLessonButtons()
+    }
+
+    private fun setupLessonButtons() {
+        binding.contentMain.buttonGrid.removeAllViews()
+        
+        val sharedPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val maxUnlocked = sharedPrefs.getInt("MAX_UNLOCKED_LESSON", 1)
+
+        val activeColor = ContextCompat.getColor(this, R.color.button_blue)
+        val lockedColor = ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.darker_gray))
+
         for (i in 1..9) {
+            val isLocked = i > maxUnlocked
+            
             val button = MaterialButton(this).apply {
-                text = "Lesson $i"
+                text = if (isLocked) "Lesson $i \uD83D\uDD12" else "Lesson $i"
                 setTextColor(ContextCompat.getColor(context, R.color.white))
+                isEnabled = !isLocked
                 
-                // Настройка внешнего вида (скругление и цвет)
-                cornerRadius = (8 * resources.displayMetrics.density).toInt() // ~8dp скругление
-                backgroundTintList = ColorStateList.valueOf(buttonColor)
+                cornerRadius = (8 * resources.displayMetrics.density).toInt()
+                backgroundTintList = if (isLocked) lockedColor else ColorStateList.valueOf(activeColor)
                 
-                // Тень (elevation)
-                elevation = 6 * resources.displayMetrics.density // ~6dp тень
+                elevation = if (isLocked) 0f else 6 * resources.displayMetrics.density
                 
                 layoutParams = GridLayout.LayoutParams().apply {
                     width = 0
@@ -56,17 +85,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             binding.contentMain.buttonGrid.addView(button)
-        }
-
-        binding.fab.setOnClickListener { view ->
-            lifecycleScope.launch(Dispatchers.IO) {
-                val db = AppDatabase.getDatabase(applicationContext)
-                db.clearAllTables()
-                db.wordDao().insertWords(TestData.words)
-            }
-            Snackbar.make(view, "Database refreshed from TestData", Snackbar.LENGTH_LONG)
-                .setAction("Action", null)
-                .setAnchorView(R.id.fab).show()
         }
     }
 }
