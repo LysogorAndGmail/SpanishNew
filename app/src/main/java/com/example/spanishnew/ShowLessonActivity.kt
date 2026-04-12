@@ -80,6 +80,9 @@ class ShowLessonActivity : AppCompatActivity() {
         val correctWord = wordsList[currentIndex]
         binding.contentLesson.targetWord.text = correctWord.original
 
+        val sharedPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        val selectedLang = sharedPrefs.getString("SELECTED_LANG", "ru")
+
         // Генерируем варианты ответов
         val options = mutableListOf<Word>()
         options.add(correctWord)
@@ -100,7 +103,11 @@ class ShowLessonActivity : AppCompatActivity() {
         buttons.forEachIndexed { index, button ->
             if (index < shuffledOptions.size) {
                 val optionWord = shuffledOptions[index]
-                button.text = optionWord.translationRu
+                button.text = if (selectedLang == "ua") {
+                    optionWord.translationUk ?: optionWord.translationRu
+                } else {
+                    optionWord.translationRu
+                }
                 button.visibility = android.view.View.VISIBLE
                 button.setOnClickListener {
                     checkAnswer(optionWord, correctWord, button)

@@ -27,6 +27,8 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(binding.toolbar)
 
+        setupLanguageButtons()
+
         binding.fab.setOnClickListener { view ->
             lifecycleScope.launch(Dispatchers.IO) {
                 val db = AppDatabase.getDatabase(applicationContext)
@@ -43,6 +45,20 @@ class MainActivity : AppCompatActivity() {
                     setupLessonButtons()
                 }
             }
+        }
+    }
+
+    private fun setupLanguageButtons() {
+        val sharedPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+        
+        binding.contentMain.btnLangRu.setOnClickListener {
+            sharedPrefs.edit().putString("SELECTED_LANG", "ru").apply()
+            Snackbar.make(binding.root, "Язык изменен на Русский", Snackbar.LENGTH_SHORT).show()
+        }
+        
+        binding.contentMain.btnLangUa.setOnClickListener {
+            sharedPrefs.edit().putString("SELECTED_LANG", "ua").apply()
+            Snackbar.make(binding.root, "Мову змінено на Українську", Snackbar.LENGTH_SHORT).show()
         }
     }
 
