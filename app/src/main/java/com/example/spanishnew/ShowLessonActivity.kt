@@ -1,11 +1,13 @@
 package com.example.spanishnew
 
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.spanishnew.databinding.ActivitySecondBinding
+import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -13,10 +15,8 @@ import kotlinx.coroutines.withContext
 class ShowLessonActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySecondBinding
-    private lateinit var adapter: WordsAdapter
-
-    // Переменная для хранения списка слов в памяти (если понадобится потом)
     private var wordsList: List<Word> = emptyList()
+    private var currentIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,37 +33,81 @@ class ShowLessonActivity : AppCompatActivity() {
         val lessonNumber = intent.getIntExtra("LESSON_NUMBER", 0)
         binding.contentLesson.lessonTitle.text = "Lesson $lessonNumber"
 
-        setupRecyclerView()
-
-        // Запускаем загрузку и перемешивание
         loadAndShowRandomWords(lessonNumber)
-    }
-
-    private fun setupRecyclerView() {
-        adapter = WordsAdapter(emptyList())
-        binding.contentLesson.wordsRecyclerView.layoutManager = LinearLayoutManager(this)
-        binding.contentLesson.wordsRecyclerView.adapter = adapter
     }
 
     private fun loadAndShowRandomWords(lessonNumber: Int) {
         lifecycleScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getDatabase(applicationContext)
-            // 1. Получаем все слова из БД
             val allWords = db.wordDao().getWordsForLesson(lessonNumber)
 
-            // 2. Перемешиваем их случайным образом
-            // Метод .shuffled() возвращает новый список в случайном порядке
-            val shuffledWords = allWords.shuffled()
-
-            // Сохраняем в переменную класса (если захотите использовать позже)
-            wordsList = shuffledWords
-
-            Log.d("SpanishApp", "Loaded ${allWords.size} words, showing in random order new new")
-
-            // 3. Выводим в интерфейс
-            withContext(Dispatchers.Main) {
-                adapter.updateWords(shuffledWords)
+            if (allWords.isEmpty()) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@ShowLessonActivity, "No words in this lesson", Toast.LENGTH_SHORT).show()
+                }
+                return@launch
             }
+
+            wordsList = allWords.shuffled()
+            currentIndex = 0
+
+            withContext(Dispatchers.Main) {
+                showNextQuestion()
+            }
+        }
+    }
+
+    private fun showNextQuestion() {
+        if (currentIndex >= wordsList.size) {
+            Toast.makeText(this, "Lesson completed!", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
+        val correctWord = wordsList[currentIndex]
+        binding.contentLesson.targetWord.text = correctWord.original
+
+        // Генерируем варианты ответов
+        val options = mutableListOf<Word>()
+        options.add(correctWord)
+
+        // Добавляем 3 случайных неправильных ответа из этого же урока (если возможно)
+        val otherWords = wordsList.filter { it.id != correctWord.id }.shuffled()
+        options.addAll(otherWords.take(3))
+        
+        val shuffledOptions = options.shuffled()
+
+        val buttons = listOf(
+            binding.contentLesson.btnOption1,
+            binding.contentLesson.btnOption2,
+            binding.contentLesson.btnOption3,
+            binding.contentLesson.btnOption4
+        )
+
+        buttons.forEachIndexed { index, button ->
+            if (index < shuffledOptions.size) {
+                val optionWord = shuffledOptions[index]
+                button.text = optionWord.translationRu
+                button.visibility = android.view.View.VISIBLE
+                button.setOnClickListener {
+                    checkAnswer(optionWord, correctWord, button)
+                }
+                // Сброс цвета (на случай если мы его меняли)
+                button.setBackgroundColor(Color.parseColor("#5C6BC0"))
+            } else {
+                button.visibility = android.view.View.GONE
+            }
+        }
+    }
+
+    private fun checkAnswer(selected: Word, correct: Word, button: MaterialButton) {
+        if (selected.id == correct.id) {
+            Toast.makeText(this, "Correct!", Toast.LENGTH_SHORT).show()
+            currentIndex++
+            showNextQuestion()
+        } else {
+            button.setBackgroundColor(Color.RED)
+            Toast.makeText(this, "Wrong! Try again", Toast.LENGTH_SHORT).show()
         }
     }
 }
