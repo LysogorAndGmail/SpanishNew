@@ -14,6 +14,9 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -74,9 +77,22 @@ class MainActivity : AppCompatActivity() {
             val totalWords = db.wordDao().getTotalWordCount()
             val totalLessons = db.wordDao().getTotalLessonCount()
 
+            val sharedPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+            val lastActivityTime = sharedPrefs.getLong("LAST_ACTIVITY_TIME", 0L)
+            
+            val lastActivityStr = if (lastActivityTime == 0L) {
+                "Never"
+            } else {
+                val sdf = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+                sdf.format(Date(lastActivityTime))
+            }
+
             withContext(Dispatchers.Main) {
+                val totalErrors = sharedPrefs.getInt("TOTAL_ERRORS", 0)
                 binding.contentMain.totalWordsText.text = "Total words: $totalWords"
                 binding.contentMain.totalLessonsText.text = "Total lessons: $totalLessons"
+                binding.contentMain.lastActivityText.text = "Last activity: $lastActivityStr"
+                binding.contentMain.totalErrorsText.text = "Total errors: $totalErrors"
             }
         }
     }

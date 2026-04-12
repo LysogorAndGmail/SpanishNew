@@ -75,6 +75,24 @@
                     android:layout_marginTop="4dp"
                     android:text="Total lessons: 0"
                     android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/last_activity_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Last activity: Never"
+                    android:textColor="@android:color/darker_gray"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/total_errors_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Total errors: 0"
+                    android:textColor="#D32F2F"
+                    android:textSize="14sp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

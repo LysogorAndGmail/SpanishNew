@@ -124,9 +124,16 @@ class ShowLessonActivity : AppCompatActivity() {
     private fun saveProgress(completedLesson: Int) {
         val sharedPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val currentMax = sharedPrefs.getInt("MAX_UNLOCKED_LESSON", 1)
+        
+        val editor = sharedPrefs.edit()
         if (completedLesson >= currentMax) {
-            sharedPrefs.edit().putInt("MAX_UNLOCKED_LESSON", completedLesson + 1).apply()
+            editor.putInt("MAX_UNLOCKED_LESSON", completedLesson + 1)
         }
+        
+        // Сохраняем дату последней активности
+        val currentTime = System.currentTimeMillis()
+        editor.putLong("LAST_ACTIVITY_TIME", currentTime)
+        editor.apply()
     }
 
     private fun checkAnswer(selected: Word, correct: Word, button: MaterialButton) {
@@ -137,6 +144,11 @@ class ShowLessonActivity : AppCompatActivity() {
         } else {
             button.setBackgroundColor(Color.RED)
             lives--
+
+            // Инкрементируем общее количество ошибок
+            val sharedPrefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
+            val totalErrors = sharedPrefs.getInt("TOTAL_ERRORS", 0)
+            sharedPrefs.edit().putInt("TOTAL_ERRORS", totalErrors + 1).apply()
 
             // Блокируем кнопки на время задержки
             val buttons = listOf(
