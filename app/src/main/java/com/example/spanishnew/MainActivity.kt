@@ -13,6 +13,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,22 +32,37 @@ class MainActivity : AppCompatActivity() {
                 val db = AppDatabase.getDatabase(applicationContext)
                 db.clearAllTables()
                 db.wordDao().insertWords(TestData.words)
+                
+                withContext(Dispatchers.Main) {
+                    getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putInt("MAX_UNLOCKED_LESSON", 1).apply()
+                    Snackbar.make(view, "Database refreshed and progress reset", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null)
+                        .setAnchorView(R.id.fab).show()
+                    
+                    updateStats()
+                    setupLessonButtons()
+                }
             }
-            // Сброс прогресса при обновлении БД (опционально, для тестов удобно)
-            getSharedPreferences("AppPrefs", MODE_PRIVATE).edit().putInt("MAX_UNLOCKED_LESSON", 1).apply()
-            
-            Snackbar.make(view, "Database refreshed and progress reset", Snackbar.LENGTH_LONG)
-                .setAction("Action", null)
-                .setAnchorView(R.id.fab).show()
-            
-            // Перерисовываем кнопки
-            setupLessonButtons()
         }
     }
 
     override fun onResume() {
         super.onResume()
+        updateStats()
         setupLessonButtons()
+    }
+
+    private fun updateStats() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val db = AppDatabase.getDatabase(applicationContext)
+            val totalWords = db.wordDao().getTotalWordCount()
+            val totalLessons = db.wordDao().getTotalLessonCount()
+
+            withContext(Dispatchers.Main) {
+                binding.contentMain.totalWordsText.text = "Total words: $totalWords"
+                binding.contentMain.totalLessonsText.text = "Total lessons: $totalLessons"
+            }
+        }
     }
 
     private fun setupLessonButtons() {
@@ -58,33 +74,43 @@ class MainActivity : AppCompatActivity() {
         val activeColor = ContextCompat.getColor(this, R.color.button_blue)
         val lockedColor = ColorStateList.valueOf(ContextCompat.getColor(this, android.R.color.darker_gray))
 
-        for (i in 1..9) {
-            val isLocked = i > maxUnlocked
+        lifecycleScope.launch(Dispatchers.IO) {
+            val db = AppDatabase.getDatabase(applicationContext)
+            val totalLessons = db.wordDao().getTotalLessonCount()
             
-            val button = MaterialButton(this).apply {
-                text = if (isLocked) "Lesson $i \uD83D\uDD12" else "Lesson $i"
-                setTextColor(ContextCompat.getColor(context, R.color.white))
-                isEnabled = !isLocked
-                
-                cornerRadius = (8 * resources.displayMetrics.density).toInt()
-                backgroundTintList = if (isLocked) lockedColor else ColorStateList.valueOf(activeColor)
-                
-                elevation = if (isLocked) 0f else 6 * resources.displayMetrics.density
-                
-                layoutParams = GridLayout.LayoutParams().apply {
-                    width = 0
-                    height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                    setMargins(16, 16, 16, 16)
-                }
+            withContext(Dispatchers.Main) {
+                // Если уроков в базе больше чем 9, отобразим все
+                val countToShow = if (totalLessons > 0) totalLessons else 9
 
-                setOnClickListener {
-                    val intent = Intent(this@MainActivity, ShowLessonActivity::class.java)
-                    intent.putExtra("LESSON_NUMBER", i)
-                    startActivity(intent)
+                for (i in 1..countToShow) {
+                    val isLocked = i > maxUnlocked
+                    
+                    val button = MaterialButton(this@MainActivity).apply {
+                        text = if (isLocked) "Lesson $i \uD83D\uDD12" else "Lesson $i"
+                        setTextColor(ContextCompat.getColor(context, R.color.white))
+                        isEnabled = !isLocked
+                        
+                        cornerRadius = (8 * resources.displayMetrics.density).toInt()
+                        backgroundTintList = if (isLocked) lockedColor else ColorStateList.valueOf(activeColor)
+                        
+                        elevation = if (isLocked) 0f else 6 * resources.displayMetrics.density
+                        
+                        layoutParams = GridLayout.LayoutParams().apply {
+                            width = 0
+                            height = ViewGroup.LayoutParams.WRAP_CONTENT
+                            columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                            setMargins(16, 16, 16, 16)
+                        }
+
+                        setOnClickListener {
+                            val intent = Intent(this@MainActivity, ShowLessonActivity::class.java)
+                            intent.putExtra("LESSON_NUMBER", i)
+                            startActivity(intent)
+                        }
+                    }
+                    binding.contentMain.buttonGrid.addView(button)
                 }
             }
-            binding.contentMain.buttonGrid.addView(button)
         }
     }
 }

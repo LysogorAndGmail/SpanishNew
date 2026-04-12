@@ -15,4 +15,10 @@ interface WordDao {
 
     @Query("DELETE FROM words_table")
     suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM words_table")
+    suspend fun getTotalWordCount(): Int
+
+    @Query("SELECT COUNT(DISTINCT lessonNumber) FROM words_table")
+    suspend fun getTotalLessonCount(): Int
 }

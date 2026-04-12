@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.spanishnew.databinding.ActivitySecondBinding
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -17,6 +18,7 @@ class ShowLessonActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySecondBinding
     private var wordsList: List<Word> = emptyList()
     private var currentIndex = 0
+    private var lives = 3
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +52,7 @@ class ShowLessonActivity : AppCompatActivity() {
 
             wordsList = allWords.shuffled()
             currentIndex = 0
+            lives = 3
 
             withContext(Dispatchers.Main) {
                 binding.contentLesson.lessonProgressBar.max = wordsList.size
@@ -70,6 +73,9 @@ class ShowLessonActivity : AppCompatActivity() {
         // Update progress
         binding.contentLesson.lessonProgressBar.progress = currentIndex + 1
         binding.contentLesson.progressText.text = "${currentIndex + 1} / ${wordsList.size}"
+        
+        // Update lives display
+        binding.contentLesson.livesText.text = "❤️".repeat(lives)
 
         val correctWord = wordsList[currentIndex]
         binding.contentLesson.targetWord.text = correctWord.original
@@ -99,7 +105,8 @@ class ShowLessonActivity : AppCompatActivity() {
                 button.setOnClickListener {
                     checkAnswer(optionWord, correctWord, button)
                 }
-                // Сброс цвета (на случай если мы его меняли)
+                button.isEnabled = true
+                // Сброс цвета
                 button.setBackgroundColor(Color.parseColor("#5C6BC0"))
             } else {
                 button.visibility = android.view.View.GONE
@@ -122,15 +129,31 @@ class ShowLessonActivity : AppCompatActivity() {
             showNextQuestion()
         } else {
             button.setBackgroundColor(Color.RED)
-            Toast.makeText(this, "Wrong! Progress reset.", Toast.LENGTH_SHORT).show()
-            
-            // Сбрасываем прогресс и перемешиваем список заново
-            currentIndex = 0
-            wordsList = wordsList.shuffled()
-            
-            // Небольшая задержка, чтобы пользователь увидел красный цвет (опционально)
-            // Но для простоты вызовем сразу, так как цвета кнопок сбросятся в showNextQuestion
-            showNextQuestion()
+            lives--
+
+            // Блокируем кнопки на время задержки
+            val buttons = listOf(
+                binding.contentLesson.btnOption1,
+                binding.contentLesson.btnOption2,
+                binding.contentLesson.btnOption3,
+                binding.contentLesson.btnOption4
+            )
+            buttons.forEach { it.isEnabled = false }
+
+            lifecycleScope.launch {
+                delay(500)
+
+                if (lives <= 0) {
+                    Toast.makeText(this@ShowLessonActivity, "No lives left! Restarting lesson.", Toast.LENGTH_SHORT).show()
+                    currentIndex = 0
+                    lives = 3
+                    wordsList = wordsList.shuffled()
+                } else {
+                    Toast.makeText(this@ShowLessonActivity, "Wrong! $lives lives left.", Toast.LENGTH_SHORT).show()
+                }
+
+                showNextQuestion()
+            }
         }
     }
 }
